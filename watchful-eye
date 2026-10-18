@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+plugin_id=io.github.brunoaureli.watchful-eye
+plugin_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+
+case "${1:---help}" in
+  preview)
+    printf '%s\n' 'Visual preview only: click the background or press Esc to close. No password is accepted here.'
+    omarchy-shell lock preview
+    ;;
+  check)
+    omarchy plugin validate "$plugin_dir"
+    if [[ -f /usr/share/omarchy/shell/plugins/lock/Service.qml ]]; then
+      if ! sha256sum --check --status "$plugin_dir/upstream/Service.qml.sha256"; then
+        printf '%s\n' 'Your installed Omarchy lock service differs from the tested 4.0.4 baseline.' >&2
+        printf '%s\n' 'Check compatibility before enabling this release.' >&2
+        exit 1
+      fi
+    else
+      printf '%s\n' 'Omarchy 4 with the Quickshell lock service is required.' >&2
+      exit 1
+    fi
+    printf '%s\n' 'Manifest valid; installed lock service matches the tested baseline.'
+    ;;
+  disable)
+    omarchy plugin disable "$plugin_id"
+    ;;
+  --help|-h)
+    printf '%s\n' 'Usage: watchful-eye [preview|check|disable]' \
+      'preview: show a labeled, read-only preview; does not lock or authenticate' \
+      'check: validate the plugin and compare the installed Omarchy lock-service baseline' \
+      'disable: switch back to the built-in Omarchy lock screen'
+    ;;
+  *)
+    printf 'Unknown command: %s\n' "$1" >&2
+    exit 2
+    ;;
+esac

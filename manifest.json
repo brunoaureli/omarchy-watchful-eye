@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.brunoaureli.watchful-eye",
+  "name": "Watchful Eye",
+  "version": "0.1.0",
+  "author": "brunoaureli",
+  "license": "MIT",
+  "description": "A cursor-following block-art eye for the Omarchy lock screen, with a borderless password field and bright password dots.",
+  "omarchy": {
+    "clonedFrom": "omarchy.lock",
+    "capabilities": [
+      "authentication"
+    ]
+  },
+  "kinds": [
+    "service"
+  ],
+  "keepLoaded": true,
+  "entryPoints": {
+    "service": "Service.qml"
+  }
+}

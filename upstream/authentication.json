@@ -1,0 +1,6 @@
+{
+  "source": "https://github.com/omacom/omarchy",
+  "packageVersion": "4.0.4-1",
+  "sha256": "c3be9aee1ee0e38f6e042cf266664f5baca789b13188f8e56534d2a487b52761",
+  "scope": "Service.qml excluding only the visual preview PanelWindow; includes lock lifecycle and both PAM flows"
+}
