@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+cd "$root"
+repo=brunoaureli/omarchy-watchful-eye
+
+gh auth status
+./watchful-eye check
+npm test
+
+if [[ -z $(git log -1 --format=%H 2>/dev/null) ]]; then
+  printf '%s\n' 'Create the initial git commit before publishing.' >&2
+  exit 1
+fi
+if [[ -n $(git status --porcelain) ]]; then
+  printf '%s\n' 'Commit or remove outstanding working-tree changes before publishing.' >&2
+  exit 1
+fi
+
+if gh repo view "$repo" --json name >/dev/null 2>&1; then
+  if git remote get-url origin >/dev/null 2>&1; then
+    actual=$(git remote get-url origin)
+    case "$actual" in
+      "https://github.com/$repo"|"https://github.com/$repo.git"|"git@github.com:$repo.git") ;;
+      *) printf 'Unexpected origin: %s\n' "$actual" >&2; exit 1 ;;
+    esac
+  else
+    git remote add origin "https://github.com/$repo.git"
+  fi
+  git push -u origin HEAD:main
+else
+  gh repo create "$repo" --public --source=. --remote=origin --push \
+    --description 'A cursor-following block-art eye for the Omarchy lock screen.'
+fi
+
+# The marketplace requires a public repository; do not change its visibility implicitly.
+if [[ $(gh repo view "$repo" --json isPrivate --jq .isPrivate) != false ]]; then
+  printf '%s\n' 'Marketplace submission requires this repository to be public.' >&2
+  exit 1
+fi
+
+printf '\n%s\n' 'Marketplace issue title: [Plugin]: Watchful Eye'
+cat marketplace/submission.md
+printf '\n%s\n' 'Confirm the ownership statement and every checklist item above.'
+read -r -p 'Submit this exact issue now? [y/N] ' answer
+[[ $answer == y || $answer == Y ]] || exit 0
+
+existing=$(gh issue list --repo omacom/omarchy-plugin-marketplace --state all \
+  --search '"[Plugin]: Watchful Eye" in:title author:@me' --json url,title \
+  --jq '.[] | select(.title == "[Plugin]: Watchful Eye") | .url' | head -n 1)
+if [[ -n $existing ]]; then
+  printf 'Existing submission: %s\n' "$existing"
+  exit 0
+fi
+
+gh issue create --repo omacom/omarchy-plugin-marketplace \
+  --title '[Plugin]: Watchful Eye' --body-file marketplace/submission.md
